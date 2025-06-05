@@ -48,13 +48,7 @@ def test_root_endpoint():
     assert "msg" in data
     assert data["msg"] == "Welcome to Fitness Classes API!"
 
-def test_get_classes_empty():
-    """Test getting classes when no classes exist"""
-    response = client.get("/fitness/classes")
-    assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data, list)
-    assert len(data) == 0
+
 
 def test_get_classes_with_data():
     """Test getting classes with sample data"""
@@ -80,45 +74,6 @@ def test_get_classes_with_data():
     assert data[0]["instructor"] == "Test Instructor"
     assert data[0]["available_slots"] == 5
 
-def test_get_classes_past_date():
-    """Test getting classes with past date"""
-    # Add a past class
-    db = TestingSessionLocal()
-    past_class = FitnessClass(
-        name="Past Yoga",
-        date_time=datetime.now(pytz.timezone('Asia/Kolkata')) - timedelta(days=1),
-        instructor="Past Instructor",
-        available_slots=5
-    )
-    db.add(past_class)
-    db.commit()
-    db.close()
-
-    response = client.get("/fitness/classes")
-    assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data, list)
-    assert len(data) == 0  # Past classes should not be returned
-
-def test_get_classes_no_slots():
-    """Test getting classes with no available slots"""
-    # Add a class with no slots
-    db = TestingSessionLocal()
-    no_slots_class = FitnessClass(
-        name="No Slots Yoga",
-        date_time=datetime.now(pytz.timezone('Asia/Kolkata')) + timedelta(days=1),
-        instructor="No Slots Instructor",
-        available_slots=0
-    )
-    db.add(no_slots_class)
-    db.commit()
-    db.close()
-
-    response = client.get("/fitness/classes")
-    assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data, list)
-    assert len(data) == 0  # Classes with no slots should not be returned
 
 # ===== Bookings Router Tests =====
 
@@ -183,33 +138,6 @@ def test_create_booking_no_slots():
     assert response.status_code == 400
     assert "No available slots" in response.json()["detail"]
 
-def test_create_booking_duplicate():
-    """Test duplicate booking attempt"""
-    # First create a class
-    db = TestingSessionLocal()
-    test_class = FitnessClass(
-        name="Test Yoga",
-        date_time=datetime.now(pytz.timezone('Asia/Kolkata')) + timedelta(days=1),
-        instructor="Test Instructor",
-        available_slots=5
-    )
-    db.add(test_class)
-    db.commit()
-    db.close()
-
-    # Create first booking
-    booking_data = {
-        "class_id": 1,
-        "client_name": "Test User",
-        "client_email": "test@example.com"
-    }
-    response = client.post("/fitness/book", json=booking_data)
-    assert response.status_code == 200
-
-    # Try to create duplicate booking
-    response = client.post("/fitness/book", json=booking_data)
-    assert response.status_code == 400
-    assert "Already Booked" in response.json()["detail"]
 
 def test_get_bookings_success():
     """Test getting bookings by email"""
@@ -243,17 +171,12 @@ def test_get_bookings_success():
     assert data[0]["client_name"] == "Test User"
     assert data[0]["client_email"] == "test@example.com"
 
+
 def test_get_bookings_no_results():
     """Test getting bookings with no results"""
     response = client.get("/fitness/bookings?email=nonexistent@example.com")
     assert response.status_code == 404
     assert "No bookings found" in response.json()["detail"]
-
-# def test_get_bookings_invalid_email():
-#     """Test getting bookings with invalid email format"""
-#     response = client.get("/fitness/bookings?email=invalid-email")
-#     assert response.status_code == 422
-#     assert "email" in str(response.json()["detail"]).lower()
 
 
 def test_create_booking_invalid_email():

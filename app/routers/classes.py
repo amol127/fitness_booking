@@ -35,7 +35,8 @@ async def get_classes(db: Session = Depends(get_db)):
 
         logger.info(f"Fetched {len(classes)} upcoming classes with available slots.")
         return [
-            {
+            {   
+                "id":cls.id,
                 "name": cls.name,
                 "date_time": cls.date_time.strftime("%Y-%m-%d %I:%M:%S %p"),
                 "instructor": cls.instructor,
